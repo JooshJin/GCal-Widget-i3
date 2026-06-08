@@ -46,6 +46,10 @@ if [ ! -f "$WALLPAPER" ]; then
 fi
 
 # ─── RENDER ───────────────────────────────────────────────────────────────────
+# Set plain wallpaper immediately so there's no black screen while rendering.
+if [ -f "$WALLPAPER" ]; then
+    feh --no-fehbg --bg-fill "$WALLPAPER"
+fi
 
 "$PYTHON" "$WIDGET_SCRIPT" \
     --output    "$OUTPUT_PNG" \
