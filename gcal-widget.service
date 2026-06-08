@@ -1,0 +1,15 @@
+[Unit]
+Description=Google Calendar desktop widget renderer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.config/gcal-widget/update_widget.sh
+# Ensure the X display is available (needed for feh)
+Environment=DISPLAY=:0
+# If you use a non-default DBUS session, set it here:
+# Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+
+[Install]
+WantedBy=default.target

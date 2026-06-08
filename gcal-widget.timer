@@ -1,0 +1,13 @@
+[Unit]
+Description=Update Google Calendar desktop widget every 5 minutes
+
+[Timer]
+# Run 30 seconds after login (let network settle)
+OnBootSec=30s
+# Then every 5 minutes
+OnUnitActiveSec=5min
+# Also fire immediately when the timer unit is started
+Unit=gcal-widget.service
+
+[Install]
+WantedBy=timers.target
