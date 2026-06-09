@@ -1,4 +1,4 @@
-# gcal-widget (beta ver.)
+# GCal Background-Composited Widget for I3 (beta ver.)
 
 A frosted glass Google Calendar widget for Linux desktops. Renders a PNG composited onto your wallpaper and refreshes every 5 minutes via a systemd user timer.
 
@@ -9,7 +9,7 @@ Shows the current calendar week in a day strip, plus the next 5 upcoming events 
 ## Features
 
 - Frosted glass panel composited directly onto your wallpaper
-    - All colors are editable via the ``COL_`` - prefix parameters in `gcal-widget.py`
+    - All colors and settings configurable via `config.env` (no Python editing required)
 - Week strip with today highlighted
 - Up to 5 upcoming events, current time onward, 7-day lookahead window
 - Korean/CJK text support (Noto Sans CJK)
@@ -56,19 +56,27 @@ gcalcli agenda
 
 Complete the browser OAuth flow. After this, gcalcli runs headlessly.
 
-### 3. Copy your wallpaper
+### 3. Configure
+
+```
+cp ~/.config/gcal-widget/config.env.example ~/.config/gcal-widget/config.env
+```
+
+Edit `config.env` with your preferred settings — position, calendars, colors, font paths. This file is gitignored so your personal values are never committed.
+
+### 4. Copy your wallpaper
 
 ```
 cp /path/to/your/wallpaper.png ~/.config/gcal-widget/wallpaper.png
 ```
 
-### 4. Make the script executable
+### 5. Make the script executable
 
 ```
 chmod +x ~/.config/gcal-widget/update_widget.sh
 ```
 
-### 5. Install the systemd timer
+### 6. Install the systemd timer
 
 ```
 mkdir -p ~/.config/systemd/user
@@ -78,7 +86,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now gcal-widget.timer
 ```
 
-### 6. Wire up i3
+### 7. Wire up i3
 
 Remove any existing `feh` wallpaper lines from your i3 config and add:
 
@@ -88,7 +96,7 @@ exec --no-startup-id ~/.config/gcal-widget/update_widget.sh
 
 This sets the wallpaper on login; the timer handles updates every 5 minutes after that.
 
-### 7. (Optional) Enable linger for auto-start before login
+### 8. (Optional) Enable linger for auto-start before login
 
 ```
 loginctl enable-linger $USER
@@ -96,16 +104,21 @@ loginctl enable-linger $USER
 
 ## Configuration
 
-Edit the constants at the top of `gcal_widget.py`:
+All settings live in `config.env` (gitignored). Copy from the example and edit:
 
-| Variable | Default | Description |
+```
+cp config.env.example config.env
+```
+
+| Key | Default | Description |
 |---|---|---|
 | `WIDGET_W` / `WIDGET_H` | 1000 / 700 | Widget size in pixels |
 | `WIDGET_X` / `WIDGET_Y` | 800 / 300 | Position on screen |
-| `GCAL_CALENDAR` | `None` | Filter to a specific calendar name |
+| `GCAL_CALENDARS` | *(empty)* | Comma-separated calendar names to show; empty = all calendars |
 | `FONT_*` | Ubuntu fonts | Paths to TTF/OTF font files |
+| `COL_*` | Blue-grey theme | Colors as `R,G,B,A` (0–255) |
 
-Also update the matching `WIDGET_*` variables in `update_widget.sh`.
+Also update the matching `WIDGET_*` variables in `update_widget.sh` if you change the widget position.
 
 ## Testing
 
@@ -136,4 +149,4 @@ Default font paths are for Ubuntu/Debian:
 - **Ubuntu** — `fonts-ubuntu` package (`/usr/share/fonts/truetype/ubuntu/`)
 - **Noto Sans CJK** — `fonts-noto-cjk` package (`/usr/share/fonts/opentype/noto/`)
 
-If you're on a different distro, update the `FONT_*` paths in `gcal_widget.py` to point to equivalent fonts.
+If you're on a different distro, update the `FONT_*` paths in `config.env` to point to equivalent fonts.
