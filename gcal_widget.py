@@ -15,39 +15,58 @@ from PIL import Image, ImageDraw, ImageFont
 
 # ─── CONFIGURATION ────────────────────────────────────────────────────────────
 
-DEFAULT_OUTPUT    = os.path.expanduser("~/.config/gcal-widget/widget_overlay.png")
-DEFAULT_WALLPAPER = os.path.expanduser("~/.config/gcal-widget/wallpaper.png")
+def _load_config():
+    base     = Path(__file__).parent / "config.env.example"
+    override = Path(__file__).parent / "config.env"
+    cfg = {}
+    for path in [base, override]:
+        if path.exists():
+            with open(path) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    k, _, v = line.partition("=")
+                    cfg[k.strip()] = v.strip()
+    return cfg
 
-WIDGET_W = 1000
-WIDGET_H = 700
-WIDGET_X = 800
-WIDGET_Y = 300
+def _col(s):
+    return tuple(int(x) for x in s.split(","))
 
-GCAL_CALENDAR = None  # e.g. "Work" or ["Work", "Meals", "General"] to filter calendars
-# None or empty list defaults to all calendars
+_cfg = _load_config()
 
-FONT_LIGHT = "/usr/share/fonts/truetype/ubuntu/Ubuntu-L.ttf"
-FONT_REG   = "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"
-FONT_MED   = "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf"
-FONT_BOLD  = "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf"
-FONT_KR    = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+DEFAULT_OUTPUT    = os.path.expanduser(_cfg.get("DEFAULT_OUTPUT",    "~/.config/gcal-widget/widget_overlay.png"))
+DEFAULT_WALLPAPER = os.path.expanduser(_cfg.get("DEFAULT_WALLPAPER", "~/.config/gcal-widget/wallpaper.png"))
+
+WIDGET_W = int(_cfg.get("WIDGET_W", 1000))
+WIDGET_H = int(_cfg.get("WIDGET_H", 700))
+WIDGET_X = int(_cfg.get("WIDGET_X", 800))
+WIDGET_Y = int(_cfg.get("WIDGET_Y", 300))
+
+GCAL_CALENDARS = [c.strip() for c in _cfg.get("GCAL_CALENDARS", "").split(",") if c.strip()]
+
+FONT_LIGHT = _cfg.get("FONT_LIGHT", "/usr/share/fonts/truetype/ubuntu/Ubuntu-L.ttf")
+FONT_REG   = _cfg.get("FONT_REG",   "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf")
+FONT_MED   = _cfg.get("FONT_MED",   "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf")
+FONT_BOLD  = _cfg.get("FONT_BOLD",  "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf")
+FONT_KR    = _cfg.get("FONT_KR",    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc")
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 
-COL_BG_TOP       = (175, 195, 225, 255)
-COL_BG_BOT       = (150, 178, 215, 255)
-COL_PANEL        = (220, 228, 240, 45)  
-COL_PANEL_BORDER = (255, 255, 255, 180)
-COL_CARD         = (255, 255, 255, 32)   
-COL_CARD_BORDER  = (255, 255, 255, 130)
-COL_TEXT_MAIN    = (255, 255, 255, 245)   
-COL_TEXT_DIM     = (255, 255, 255, 210) 
-COL_TEXT_FAINT   = (255, 255, 255, 180)
-COL_TODAY_BG     = (255, 255, 255, 130)
-COL_TODAY_BORDER = (180, 200, 230, 220)
-COL_DOT          = (255, 255, 255, 245)
-COL_DOT_EMPTY    = (160, 185, 215, 160)
-COL_DIVIDER      = (255, 255, 255, 180)
+COL_BG_TOP       = _col(_cfg.get("COL_BG_TOP",       "175,195,225,255"))
+COL_BG_BOT       = _col(_cfg.get("COL_BG_BOT",       "150,178,215,255"))
+COL_PANEL        = _col(_cfg.get("COL_PANEL",         "220,228,240,45"))
+COL_PANEL_BORDER = _col(_cfg.get("COL_PANEL_BORDER",  "255,255,255,180"))
+COL_CARD         = _col(_cfg.get("COL_CARD",          "255,255,255,32"))
+COL_CARD_BORDER  = _col(_cfg.get("COL_CARD_BORDER",   "255,255,255,130"))
+COL_TEXT_MAIN    = _col(_cfg.get("COL_TEXT_MAIN",     "255,255,255,245"))
+COL_TEXT_DIM     = _col(_cfg.get("COL_TEXT_DIM",      "255,255,255,210"))
+COL_TEXT_FAINT   = _col(_cfg.get("COL_TEXT_FAINT",    "255,255,255,180"))
+COL_TODAY_BG     = _col(_cfg.get("COL_TODAY_BG",      "255,255,255,130"))
+COL_TODAY_BORDER = _col(_cfg.get("COL_TODAY_BORDER",  "180,200,230,220"))
+COL_DOT          = _col(_cfg.get("COL_DOT",           "255,255,255,245"))
+COL_DOT_EMPTY    = _col(_cfg.get("COL_DOT_EMPTY",     "160,185,215,160"))
+COL_DIVIDER      = _col(_cfg.get("COL_DIVIDER",       "255,255,255,180"))
 
 # ─── GCALCLI ──────────────────────────────────────────────────────────────────
 
@@ -59,10 +78,8 @@ def get_week_bounds():
 def fetch_events_gcalcli(start, end):
     cmd = ["gcalcli", "agenda", "--nocolor", "--tsv",
            start.strftime("%Y-%m-%d"), (end + timedelta(days=1)).strftime("%Y-%m-%d")]
-    if GCAL_CALENDAR:
-        calendars = [GCAL_CALENDAR] if isinstance(GCAL_CALENDAR, str) else GCAL_CALENDAR
-        for cal in calendars:
-            cmd += ["--calendar", cal]
+    for cal in GCAL_CALENDARS:
+        cmd += ["--calendar", cal]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if r.returncode != 0:
