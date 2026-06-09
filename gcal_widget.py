@@ -4,7 +4,7 @@ gcal_widget.py — frosted glass Google Calendar widget
 Renders a PNG composited onto your wallpaper, applied via feh.
 
 Usage:
-    python3 gcal_widget.py --dry-run                        # fake events, no gcalcli
+    python3 gcal_widget.py --dry-run   (fake events, no gcalcli)
     python3 gcal_widget.py --output OUT.png --wallpaper BG.png
 """
 
@@ -23,7 +23,8 @@ WIDGET_H = 700
 WIDGET_X = 800
 WIDGET_Y = 300
 
-GCAL_CALENDAR = None  # e.g. "Josh" to filter one calendar
+GCAL_CALENDAR = None  # e.g. "Work" or ["Work", "Meals", "General"] to filter calendars
+# None or empty list defaults to all calendars
 
 FONT_LIGHT = "/usr/share/fonts/truetype/ubuntu/Ubuntu-L.ttf"
 FONT_REG   = "/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf"
@@ -31,17 +32,17 @@ FONT_MED   = "/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf"
 FONT_BOLD  = "/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf"
 FONT_KR    = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
 
-# ─── COLOURS ──────────────────────────────────────────────────────────────────
-# Panel: much more opaque white so it reads on any wallpaper
+# ─── Colors ──────────────────────────────────────────────────────────────────
+
 COL_BG_TOP       = (175, 195, 225, 255)
 COL_BG_BOT       = (150, 178, 215, 255)
 COL_PANEL        = (220, 228, 240, 45)  
 COL_PANEL_BORDER = (255, 255, 255, 180)
 COL_CARD         = (255, 255, 255, 32)   
 COL_CARD_BORDER  = (255, 255, 255, 130)
-COL_TEXT_MAIN    = (255, 255, 255, 245)   # dark navy — readable on light panel
-COL_TEXT_DIM     = (255, 255, 255, 210) # month/year, day nums, event days
-COL_TEXT_FAINT   = (255, 255, 255, 180) # day labels, event times
+COL_TEXT_MAIN    = (255, 255, 255, 245)   
+COL_TEXT_DIM     = (255, 255, 255, 210) 
+COL_TEXT_FAINT   = (255, 255, 255, 180)
 COL_TODAY_BG     = (255, 255, 255, 130)
 COL_TODAY_BORDER = (180, 200, 230, 220)
 COL_DOT          = (255, 255, 255, 245)
@@ -59,7 +60,9 @@ def fetch_events_gcalcli(start, end):
     cmd = ["gcalcli", "agenda", "--nocolor", "--tsv",
            start.strftime("%Y-%m-%d"), (end + timedelta(days=1)).strftime("%Y-%m-%d")]
     if GCAL_CALENDAR:
-        cmd += ["--calendar", GCAL_CALENDAR]
+        calendars = [GCAL_CALENDAR] if isinstance(GCAL_CALENDAR, str) else GCAL_CALENDAR
+        for cal in calendars:
+            cmd += ["--calendar", cal]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         if r.returncode != 0:
